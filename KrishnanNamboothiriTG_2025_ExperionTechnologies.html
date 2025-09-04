@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code‑A‑Pookalam — Onam</title>
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --ink: #101010;
+        --ui: #ffffff;
+        --shadow: 0 6px 24px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          "Helvetica Neue", Arial;
+        color: var(--ui);
+        background: radial-gradient(1200px 1200px at 100% 0%, #1a1a1a, #0b0b0b)
+          fixed;
+      }
+      header {
+        padding: 20px 16px 0;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(20px, 3vw, 28px);
+        letter-spacing: 0.4px;
+        font-weight: 800;
+      }
+      p.sub {
+        margin: 0.5rem 0 0;
+        opacity: 0.8;
+        font-size: clamp(12px, 2vw, 14px);
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 16px auto;
+        padding: 12px;
+      }
+      .board {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      @media (min-width: 960px) {
+        .board {
+          grid-template-columns: 2fr 1fr;
+        }
+      }
+      canvas {
+        width: 100%;
+        height: auto;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        background: #0b0b0b;
+      }
+      .card {
+        padding: 16px;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        background: linear-gradient(180deg, #131313, #0e0e0e);
+      }
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        align-items: end;
+      }
+      .controls > * {
+        min-width: 0;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        opacity: 0.8;
+        margin-bottom: 6px;
+      }
+      input[type="text"],
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 12px;
+        outline: none;
+        border: 1px solid #2a2a2a;
+        background: #121212;
+        color: var(--ui);
+      }
+      button {
+        appearance: none;
+        border: 0;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-weight: 700;
+        background: #ffd000;
+        color: #1a1400;
+        cursor: pointer;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+      }
+      button.ghost {
+        background: #222;
+        color: #fff;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .small {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+      footer {
+        padding: 16px;
+        text-align: center;
+        opacity: 0.8;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="wrap">
+      <h1>Code‑A‑Pookalam • (HTML Canvas)</h1>
+    </header>
+
+    <main class="wrap board">
+      <section>
+        <canvas
+          id="pookalam"
+          width="1400"
+          height="1400"
+          aria-label="Pookalam"
+        ></canvas>
+      </section>
+
+      <aside class="card">
+        <div class="controls">
+          <div>
+            <label for="palette">Palette</label>
+            <select id="palette">
+              <option value="traditional">
+                Traditional (Marigold & Jasmine)
+              </option>
+              <option value="lotus">Lotus & Magenta</option>
+              <option value="sunset">Kerala Sunset</option>
+              <option value="mono">Ivory Mono</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 10px">
+          <button id="regen">Regenerate</button>
+          <button id="save" class="ghost">Save PNG</button>
+          <button id="animate" class="ghost">Toggle Glow</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      FOSS MEC • CELEBRATES ONAM 2025! ✨🌼 — Built with ❤️ in pure Canvas
+    </footer>
+
+    <script>
+      const PALETTES = {
+        traditional: {
+          name: "Traditional",
+          colors: [
+            "#ffb000",
+            "#ff7a00",
+            "#e23201",
+            "#006a2e",
+            "#ffffff",
+            "#ffe066",
+            "#9b1b30",
+          ], // marigold, vermilion, leaf green, jasmine, turmeric, crimson
+          bg: "#0b0b0b",
+        },
+        lotus: {
+          name: "Lotus",
+          colors: [
+            "#ff4da6",
+            "#c81d77",
+            "#781c68",
+            "#ffd166",
+            "#f6f7f8",
+            "#1aa06d",
+            "#5bba6f",
+          ],
+          bg: "#0b0b0b",
+        },
+        sunset: {
+          name: "Sunset",
+          colors: [
+            "#ffcf33",
+            "#ff9933",
+            "#ff5e3a",
+            "#fa255e",
+            "#00a8a8",
+            "#f7fff7",
+            "#0fbf9f",
+          ],
+          bg: "#0b0b0b",
+        },
+        mono: {
+          name: "Ivory Mono",
+          colors: [
+            "#fffaf0",
+            "#f2e8cf",
+            "#e0dccb",
+            "#c7c2ae",
+            "#a8a38e",
+            "#8a8571",
+            "#5a574a",
+          ],
+          bg: "#0b0b0b",
+        },
+      };
+      const canvas = document.getElementById("pookalam");
+      const ctx = canvas.getContext("2d");
+
+      function fitCanvas() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const size = Math.min(window.innerWidth * 0.9, 500);
+        canvas.style.width = size + "px";
+        canvas.style.height = size + "px";
+        canvas.width = Math.floor(size * dpr);
+        canvas.height = Math.floor(size * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      window.addEventListener("resize", () => {
+        fitCanvas();
+        drawAll();
+      });
+
+      const TAU = Math.PI * 2;
+      const deg = (d) => (d * Math.PI) / 180;
+      function withSave(fn) {
+        ctx.save();
+        try {
+          fn();
+        } finally {
+          ctx.restore();
+        }
+      }
+      function ring(r1, r2, paint) {
+        withSave(() => {
+          ctx.beginPath();
+          ctx.arc(0, 0, r2, 0, TAU);
+          ctx.arc(0, 0, r1, 0, TAU, true);
+          ctx.closePath();
+          paint();
+        });
+      }
+      function radial(n, fn) {
+        for (let i = 0; i < n; i++) {
+          withSave(() => {
+            ctx.rotate((TAU * i) / n);
+            fn(i, n);
+          });
+        }
+      }
+      function petal(rInner, rOuter, width, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(rInner, 0);
+        ctx.quadraticCurveTo((rInner + rOuter) / 2, -width, rOuter, 0);
+        ctx.quadraticCurveTo((rInner + rOuter) / 2, width, rInner, 0);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function teardrop(r, len, w, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(r, 0);
+        ctx.quadraticCurveTo(r + len * 0.2, -w, r + len * 0.7, -w * 0.25);
+        ctx.quadraticCurveTo(r + len, 0, r + len * 0.7, w * 0.25);
+        ctx.quadraticCurveTo(r + len * 0.2, w, r, 0);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function scallopRing(r, count, thickness, color) {
+        ctx.fillStyle = color;
+        radial(count, () => {
+          ctx.beginPath();
+          ctx.arc(r, 0, thickness, Math.PI * 0.5, Math.PI * 1.5);
+          ctx.closePath();
+          ctx.fill();
+        });
+      }
+
+      function beadRing(r, count, size, color) {
+        ctx.fillStyle = color;
+        radial(count, () => {
+          ctx.beginPath();
+          ctx.arc(r, 0, size, 0, TAU);
+          ctx.fill();
+        });
+      }
+
+      function triangleRing(r, count, h, color) {
+        ctx.fillStyle = color;
+        radial(count, () => {
+          ctx.beginPath();
+          ctx.moveTo(r, 0);
+          ctx.lineTo(r + h, -h * 0.6);
+          ctx.lineTo(r + h, h * 0.6);
+          ctx.closePath();
+          ctx.fill();
+        });
+      }
+
+      function lotus(r, outer, n, colors) {
+        radial(n, (i) => {
+          petal(r * 0.15, outer, outer * 0.28, colors[i % colors.length]);
+          ctx.rotate(TAU / (n * 2));
+          petal(
+            r * 0.1,
+            outer * 0.85,
+            outer * 0.22,
+            colors[(i + 1) % colors.length]
+          );
+        });
+        withSave(() => {
+          ctx.fillStyle = colors[0];
+          ctx.beginPath();
+          ctx.arc(0, 0, r * 0.16, 0, TAU);
+          ctx.fill();
+        });
+        beadRing(r * 0.22, n * 2, r * 0.02, colors[1]);
+      }
+      function noiseGrain(radius) {
+        const step = 3;
+        ctx.globalAlpha = 0.06;
+        ctx.fillStyle = "#000";
+        for (let y = -radius; y < radius; y += step) {
+          for (let x = -radius; x < radius; x += step) {
+            const d = Math.hypot(x, y);
+            if (d < radius && Math.random() < 0.22) {
+              ctx.fillRect(x, y, 1, 1);
+            }
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+      let anim = { glow: false, t: 0 };
+
+      function drawPookalam(palette) {
+        const W = canvas.width / (window.devicePixelRatio || 1);
+        const H = canvas.height / (window.devicePixelRatio || 1);
+        ctx.clearRect(0, 0, W, H);
+
+        withSave(() => {
+          ctx.translate(W / 2, H / 2);
+          const R = Math.min(W, H) * 0.39;
+
+          const g = ctx.createRadialGradient(0, 0, R * 0.05, 0, 0, R * 1.02);
+          g.addColorStop(0, "#111");
+          g.addColorStop(1, "#000");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(0, 0, R * 1.03, 0, TAU);
+          ctx.fill();
+
+          // lotus(R*6.9, R*1.3, 16, [palette.colors[0], palette.colors[1], palette.colors[2]]);
+          ring(0, R * 1.0, () => {
+            ctx.fillStyle = palette.colors[5];
+            ctx.fill();
+          });
+          scallopRing(R * 0.88, 64, R * 0.1, palette.colors[0]);
+          beadRing(R * 0.73, 96, R * 0.018, palette.colors[4]);
+
+          triangleRing(R * 0.62, 48, R * 0.13, palette.colors[3]);
+          triangleRing(R * 0.9, 52, R * 0.13, palette.colors[4]);
+
+          ring(R * 0.56, R * 0.59, () => {
+            ctx.fillStyle = palette.colors[2];
+            ctx.fill();
+          });
+
+          const petals = 32;
+          radial(petals, (i) => {
+            petal(
+              R * 0.36,
+              R * 0.56,
+              R * 0.12,
+              i % 2 ? palette.colors[1] : palette.colors[0]
+            );
+          });
+          radial(petals, (i) => {
+            petal(
+              R * 0.89,
+              R * 1.2,
+              R * 0.12,
+              i % 2 ? palette.colors[1] : palette.colors[0]
+            );
+          });
+          beadRing(R * 0.39, petals * 2, R * 0.01, palette.colors[4]);
+
+          beadRing(R * 0.72, petals * 2, R * 0.01, palette.colors[4]);
+
+          lotus(R * 0.38, R * 0.34, 16, [
+            palette.colors[0],
+            palette.colors[1],
+            palette.colors[2],
+          ]);
+
+          // ring(0, R*0.22, ()=>{ ctx.fillStyle = palette.colors[2]; ctx.fill(); });
+          ring(0, R * 0.18, () => {
+            ctx.fillStyle = palette.colors[0];
+            ctx.fill();
+          });
+          ring(0, R * 0.14, () => {
+            ctx.fillStyle = palette.colors[4];
+            ctx.fill();
+          });
+          ring(0, R * 0.1, () => {
+            ctx.fillStyle = palette.colors[3];
+            ctx.fill();
+          });
+          beadRing(R * 0.06, 24, R * 0.012, palette.colors[4]);
+
+          noiseGrain(R * 1.0);
+
+          if (anim.glow) {
+            ctx.globalCompositeOperation = "lighter";
+            ctx.globalAlpha = 0.12 + 0.08 * Math.sin(anim.t * 0.02);
+            ring(R * 0.34, R * 0.6, () => {
+              ctx.fillStyle = palette.colors[0];
+              ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = "source-over";
+          }
+        });
+      }
+
+      function drawAll() {
+        const pal =
+          PALETTES[document.getElementById("palette").value || "traditional"];
+        document.body.style.background = `radial-gradient(1200px 1200px at 100% 0%, #1a1a1a, ${pal.bg})`;
+        drawPookalam(pal);
+      }
+
+      document.getElementById("regen").addEventListener("click", drawAll);
+      document.getElementById("palette").addEventListener("change", drawAll);
+      document.getElementById("save").addEventListener("click", () => {
+        const link = document.createElement("a");
+        link.download = "pookalam.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+      document.getElementById("animate").addEventListener("click", () => {
+        anim.glow = !anim.glow;
+      });
+      function loop() {
+        if (anim.glow) {
+          anim.t += 1;
+          drawAll();
+        } else {
+          anim.t -= 1;
+          drawAll();
+        }
+        requestAnimationFrame(loop);
+      }
+
+      // staartup
+      fitCanvas();
+      document.getElementById("palette").value = "traditional";
+      drawAll();
+      loop();
+    </script>
+  </body>
+</html>
